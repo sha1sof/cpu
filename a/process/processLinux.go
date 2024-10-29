@@ -7,10 +7,12 @@ import (
 	"bytes"
 	"context"
 	"cpuV3/a/cpu"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var ClockTicks = 100
@@ -109,7 +111,15 @@ func (p *Process) fillFromTIDStatWithContext(ctx context.Context, tid int32) (ui
 		Iowait: iotime / float64(ClockTicks),
 	}
 
-	return terminal, int32(ppid), cpuTimes, 0, 0, 0, nil, nil
+	bootTime, _ := BootTimeWithContext(ctx)
+	t, err := strconv.ParseUint(fields[22], 10, 64)
+	if err != nil {
+		return 0, 0, nil, 0, 0, 0, nil, err
+	}
+	ctime := (t / uint64(ClockTicks)) + uint64(bootTime)
+	createTime := int64(ctime * 1000)
+
+	return terminal, int32(ppid), cpuTimes, createTime, 0, 0, nil, nil
 }
 
 func splitProcStat(content []byte) []string {
@@ -123,4 +133,65 @@ func splitProcStat(content []byte) []string {
 	fields[2] = string(name)
 	fields = append(fields, restFields...)
 	return fields
+}
+
+func (p *Process) createTimeWithContext(ctx context.Context) (int64, error) {
+	_, _, _, createTime, _, _, _, err := p.fillFromStatWithContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return createTime, nil
+}
+
+func BootTimeWithContext(ctx context.Context) (uint64, error) {
+	system, role, err := Virtualization()
+	if err != nil {
+		return 0, err
+	}
+
+	statFile := "stat"
+	if system == "lxc" && role == "guest" {
+		// if lxc, /proc/uptime is used.
+		statFile = "uptime"
+	} else if system == "docker" && role == "guest" {
+		// also docker, guest
+		statFile = "uptime"
+	}
+
+	filename := cpu.HostProc(statFile)
+	lines, err := cpu.ReadLines(filename)
+	if err != nil {
+		return 0, err
+	}
+
+	if statFile == "uptime" {
+		if len(lines) != 1 {
+			return 0, fmt.Errorf("wrong uptime format")
+		}
+		f := strings.Fields(lines[0])
+		b, err := strconv.ParseFloat(f[0], 64)
+		if err != nil {
+			return 0, err
+		}
+		t := uint64(time.Now().Unix()) - uint64(b)
+		return t, nil
+	}
+	if statFile == "stat" {
+		for _, line := range lines {
+			if strings.HasPrefix(line, "btime") {
+				f := strings.Fields(line)
+				if len(f) != 2 {
+					return 0, fmt.Errorf("wrong btime format")
+				}
+				b, err := strconv.ParseInt(f[1], 10, 64)
+				if err != nil {
+					return 0, err
+				}
+				t := uint64(b)
+				return t, nil
+			}
+		}
+	}
+
+	return 0, fmt.Errorf("could not find btime")
 }
