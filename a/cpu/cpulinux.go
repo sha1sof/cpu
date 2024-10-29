@@ -119,7 +119,7 @@ func countsWithContext(ctx context.Context, logical bool) (int, error) {
 	if logical {
 		ret := 0
 		procCpuinfo := HostProc("cpuinfo")
-		lines, err := readLines(procCpuinfo)
+		lines, err := ReadLines(procCpuinfo)
 		if err == nil {
 			for _, line := range lines {
 				line = strings.ToLower(line)
@@ -133,7 +133,7 @@ func countsWithContext(ctx context.Context, logical bool) (int, error) {
 		}
 		if ret == 0 {
 			procStat := HostProc("stat")
-			lines, err = readLines(procStat)
+			lines, err = ReadLines(procStat)
 			if err != nil {
 				return 0, err
 			}
@@ -149,7 +149,7 @@ func countsWithContext(ctx context.Context, logical bool) (int, error) {
 	for _, glob := range []string{"devices/system/cpu/cpu[0-9]*/topology/core_cpus_list", "devices/system/cpu/cpu[0-9]*/topology/thread_siblings_list"} {
 		if files, err := filepath.Glob(hostSys(glob)); err == nil {
 			for _, file := range files {
-				lines, err := readLines(file)
+				lines, err := ReadLines(file)
 				if err != nil || len(lines) != 1 {
 					continue
 				}
@@ -162,7 +162,7 @@ func countsWithContext(ctx context.Context, logical bool) (int, error) {
 		}
 	}
 	filename := HostProc("cpuinfo")
-	lines, err := readLines(filename)
+	lines, err := ReadLines(filename)
 	if err != nil {
 		return 0, err
 	}
