@@ -4,7 +4,6 @@ import (
 	"context"
 	"cpuV3/a/cpu"
 	"cpuV3/a/process"
-	"fmt"
 	"os"
 	"sync"
 )
@@ -22,7 +21,6 @@ func GetCpuUsage(ctx context.Context) (usage uint32, currentProcessUsage uint32,
 		if err != nil {
 			errChan <- err
 			usage = 0
-			fmt.Printf("Error resultUsage: %v", err)
 			return
 		}
 
@@ -36,7 +34,6 @@ func GetCpuUsage(ctx context.Context) (usage uint32, currentProcessUsage uint32,
 		p, err := process.NewProcess(int32(pid))
 		if err != nil {
 			errChan <- err
-			fmt.Printf("Error resultUsage: %v", err)
 			return
 		}
 
@@ -44,7 +41,6 @@ func GetCpuUsage(ctx context.Context) (usage uint32, currentProcessUsage uint32,
 		if err != nil {
 			errChan <- err
 			currentProcessUsage = 0
-			fmt.Printf("Error resultCurrentProcessUsage: %v", err)
 			return
 		}
 

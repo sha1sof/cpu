@@ -20,8 +20,12 @@ func main() {
 		defer cancle()
 
 		usage, currentProcessUsage, err := a.GetCpuUsage(ctx)
-		fmt.Println("Error:", err)
-		fmt.Printf("usage: %v\n", usage)
-		fmt.Printf("currentProcessUsage: %v\n", currentProcessUsage)
+		if err != nil {
+			fmt.Println("Error:", err)
+			continue
+		} else {
+			fmt.Printf("usage: %v\n", usage)
+			fmt.Printf("currentProcessUsage: %v\n", currentProcessUsage)
+		}
 	}
 }
