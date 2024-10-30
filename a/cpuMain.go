@@ -10,7 +10,7 @@ import (
 
 func GetCpuUsage(ctx context.Context) (usage uint32, currentProcessUsage uint32, err error) {
 	var wg sync.WaitGroup
-	errChan := make(chan error, 2)
+	errChan := make(chan error, 3)
 
 	wg.Add(2)
 
@@ -21,10 +21,10 @@ func GetCpuUsage(ctx context.Context) (usage uint32, currentProcessUsage uint32,
 		if err != nil {
 			errChan <- err
 			usage = 0
-			return
+		} else {
+			usage = uint32(resultUsage[0])
 		}
 
-		usage = uint32(resultUsage[0])
 	}()
 
 	go func() {
@@ -40,21 +40,26 @@ func GetCpuUsage(ctx context.Context) (usage uint32, currentProcessUsage uint32,
 		resultCurrentProcessUsage, err := p.PercentWithContext(ctx)
 		if err != nil {
 			errChan <- err
-			currentProcessUsage = 0
+			currentProcessUsage = 999
 			return
 		}
 
-		totalLogicalCores, _ := cpu.Counts(true)
+		totalLogicalCores, err := cpu.Counts(true)
+		if err != nil {
+			errChan <- err
+		}
 		currentProcessUsage = uint32((resultCurrentProcessUsage / 100) * float64(totalLogicalCores))
 	}()
 
-	go func() {
+	wg.Wait()
+	close(errChan)
+	/*	go func() {
 		wg.Wait()
 		close(errChan)
-	}()
+	}()*/
 
 	for e := range errChan {
-		if err != nil {
+		if e != nil {
 			err = e
 		} else {
 			return usage, currentProcessUsage, err

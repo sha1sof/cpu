@@ -15,17 +15,14 @@ func main() {
 		}
 	}()
 
-	for {
-		ctx, cancle := context.WithTimeout(context.Background(), 1*time.Second)
-		defer cancle()
+	ctx, cancle := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancle()
 
-		usage, currentProcessUsage, err := a.GetCpuUsage(ctx)
-		if err != nil {
-			fmt.Println("Error:", err)
-			continue
-		} else {
-			fmt.Printf("usage: %v\n", usage)
-			fmt.Printf("currentProcessUsage: %v\n", currentProcessUsage)
-		}
+	usage, currentProcessUsage, err := a.GetCpuUsage(ctx)
+	if err != nil {
+		fmt.Printf("Error getting cpu usage: %v\n", err)
+	} else {
+		fmt.Printf("CPU Usage: %v \n", usage)
+		fmt.Printf("currentProcessUsage Usage: %v \n", currentProcessUsage)
 	}
 }
